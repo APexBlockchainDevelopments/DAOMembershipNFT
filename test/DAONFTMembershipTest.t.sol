@@ -31,6 +31,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
         nftManagerContract = MembershipNFT(newDao.getNFTContractAddress());
     }
 
+    ///single user testing
     function test_revertIfUserDoesNotSendEnoughFunds() public {
         address firstUser = address(uint160(1));
         vm.deal(firstUser, STARTING_USER_BALANCE);
@@ -56,6 +57,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
         // final check json URI of fresh member!
         string memory jsonTokenURI = nftManagerContract.tokenURI(0);
         string memory expectedJsonTokenURI = svgToImageURI(activeSvg);
+        assertEq(jsonTokenURI, expectedJsonTokenURI);
 
     }
 
@@ -74,22 +76,37 @@ contract DAONFTMembershipTest is StdCheats, Test{
         uint256 daoEntryFee = newDao.getMemebershipFeeUSD();
         uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals();  //this math sucks, needs a fix
         vm.expectRevert("You are already a member!");
-        newDao.joinDAO{value: entryFeeInWei}();  //fix this math to get a precise amount
+        newDao.joinDAO{value: entryFeeInWei}(); 
     }
 
-    function test_userCanLeaveDao() public singleUserJoinsDao(){  //clean up this function big time, lol
+    function test_userCanLeaveDao() public singleUserJoinsDao(){ 
+        uint256 membershipCountBeforeUserLeaves = newDao.getNumberOfActiveMembers();
+        uint256 daoContractBalance = address(newDao).balance;
+        uint256 expectedRefund = daoContractBalance / membershipCountBeforeUserLeaves;
+        uint256 currentuserBalance = address(user).balance;
         vm.startPrank(user);
         newDao.leaveDAO();
         vm.stopPrank();
-        bool result= nftManagerContract.getMembershipStatusBasedOnTokenId(0);
-        console.log(result);
-        string memory jsonTokenURI = nftManagerContract.tokenURI(0);
+
+
+        assertEq(newDao.getNumberOfActiveMembers(), membershipCountBeforeUserLeaves - 1); // users are one less
+        assertEq(address(newDao).balance, daoContractBalance - expectedRefund);//contract has expected less balance
+        assertEq(address(user).balance, currentuserBalance + expectedRefund);//user got the funds
+        
+        uint256 memberId = newDao.getMemberTokenId(user);
+
+        bool result= nftManagerContract.getMembershipStatusBasedOnTokenId(memberId);
+        assertEq(nftManagerContract.getMembershipStatusBasedOnTokenId(memberId), false); //based on NFTmanagerContract
+        assertEq(newDao.getMemberStatus(user), false); //based on Dao Contract
+        assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(false));
     }
 
     //fuzz test users can join dao
+    //single user leaves after a bunch join
+    //user can rejoin
     //users get NFTs
     //uri
-    //user can leave dao
+    //users can leave dao
     //users can leave dao
     //user that left have nft flipped
     //cant leaven without joining
@@ -98,7 +115,28 @@ contract DAONFTMembershipTest is StdCheats, Test{
     //memberlist updates
 
 
-    //helper function to compare resulting strings
+    //multipleuser testing
+
+
+    //basic generic testing
+
+    function test_genericTesting() public {
+        assertEq(newDao.getMemebershipFeeUSD(), 1000);
+        assertEq(newDao.getOwner(), address(this));
+        assertEq(newDao.getNFTContractAddress(), address(nftManagerContract));
+    }
+     
+  
+    //  function getNFTContractAddress() external view returns(address){
+    //     return address(membershipNFTContract);
+    //  }
+  
+    //  function getPriceFeedAddress() external view returns(address){
+    //     return address(s_priceFeed);
+    //  }
+
+
+    //helper functions to compare resulting strings
     function svgToImageURI(string memory svg) public pure returns(string memory){
         string memory baseURI = "data:image/svg+xml;base64,";
         string memory svgBase64Encoded = Base64.encode(
@@ -106,6 +144,37 @@ contract DAONFTMembershipTest is StdCheats, Test{
         );
         return string(abi.encodePacked(baseURI, svgBase64Encoded));
     } 
+
+    function getCurrentMemberUri(bool activeStatus) public view returns(string memory){
+
+        string memory image = svgToImageURI(formerSvg);
+        string memory description = '", "description":"A former member of the DAO! This NFT Proves it! This NFT changes when a member leaves the DAO.", ';
+        if (activeStatus) {
+            image = svgToImageURI(activeSvg);
+            description = '", "description":"A current member of the DAO! This NFT Proves it! It will change if the member leaves the DAO.", ';
+        }
+
+    
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"',
+                            'MemberOwnershipNFT',
+                            description,
+                            '"attributes": [{"trait_type": "Memberstatus", "active": ',
+                            activeStatus,
+                            '}], "image":"',
+                            image,
+                            '"}'
+                        )
+                    )
+                )
+            )
+        );
+    }
 
 
 }

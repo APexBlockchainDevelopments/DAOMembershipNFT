@@ -86,7 +86,7 @@ contract DAO {
       //change NFT
       membershipNFTContract.flipNFT(memberToTokenId[msg.sender]);
       //update membership list
-      membershipStatus[msg.sender] == false;
+      membershipStatus[msg.sender] = false;
       //send funds back to them
       uint256 contractBalance = address(this).balance;
       uint256 shareAmount = contractBalance / membershipCount;
