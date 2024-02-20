@@ -39,14 +39,14 @@ contract MembershipNFT is ERC721, Ownable {
     uint256 private s_tokenCounter;
     address private daoContractAddress;
     mapping(uint256 => bool) private tokenMembershipStatus;
-    mapping(uint256 => string tokenUri) private s_tokenIdToUri;
+    //mapping(uint256 => string tokenUri) private s_tokenIdToUri; //dont'need this?
 
     
 
-    //events??
-    //new nft minted
-    //nft flipped
-    //nft burned
+    //events
+    event NFTMinted(address to, uint256 tokenId);
+    event NFTFlipped(address owner, uint256 tokenId);
+    event NFTBurned(address owner, uint256 tokenId);
 
     constructor(string memory currentMemberSvgUri, string memory formerMemberSvgUri) ERC721("MemberOwnershipNFT", "MNFT") Ownable(msg.sender) {
         daoContractAddress = msg.sender;
@@ -59,7 +59,7 @@ contract MembershipNFT is ERC721, Ownable {
 
     function mintNFT(address _to) public returns(uint256) {
         require(msg.sender == daoContractAddress, "You are not allowed to mint new NFTS!");
-        s_tokenIdToUri[s_tokenCounter] = getCurrentMemberUri(s_tokenCounter);
+        //s_tokenIdToUri[s_tokenCounter] = getCurrentMemberUri(s_tokenCounter);  // dont need this line? it's all based on tokenMembershipStatus mapping
         _safeMint(_to, s_tokenCounter);
         tokenMembershipStatus[s_tokenCounter] = true;
         uint256 freshlyMintedTokenId = s_tokenCounter;
@@ -73,7 +73,7 @@ contract MembershipNFT is ERC721, Ownable {
     }
 
     function burnNFT(uint256 _tokenId) public onlyOwner {
-        require(getMembershipStatusBasedOnTokenId(_tokenId), "You are still and active member!");
+        require(getMembershipStatusBasedOnTokenId(_tokenId), "You are still and active member!");  //does this mess with the total supply?
         _burn(_tokenId);
     }
 
@@ -110,13 +110,14 @@ contract MembershipNFT is ERC721, Ownable {
         }
     
         bool activeStatus = tokenMembershipStatus[tokenId];
-        //if this doesn't work well do an if statement
-        string memory image;
-        if(activeStatus){
+
+        string memory image = s_formerMemberSvgUri;
+        string memory description = '", "description":"A former member of the DAO! This NFT Proves it! This NFT changes when a member leaves the DAO.", ';
+        if (activeStatus) {
             image = s_currentMemberSvgUri;
-        } else {
-            image = s_formerMemberSvgUri;
+            description = '", "description":"A current member of the DAO! This NFT Proves it! It will change if the member leaves the DAO.", ';
         }
+
     
         return string(
             abi.encodePacked(
@@ -126,7 +127,7 @@ contract MembershipNFT is ERC721, Ownable {
                         abi.encodePacked(
                             '{"name":"',
                             name(),
-                            '", "description":"A current member of the DAO! This NFT Proves it! It will change if the member leaves the DAO.", ',
+                            description,
                             '"attributes": [{"trait_type": "Memberstatus", "active": ',
                             activeStatus,
                             '}], "image":"',
@@ -137,6 +138,18 @@ contract MembershipNFT is ERC721, Ownable {
                 )
             )
         );
+    }
+
+    function getDAOAddress() external view returns(address) {
+        return address(daoContractAddress);
+    }
+
+    function getCurrentMemberSVGUri() external view returns(string memory){
+        return s_currentMemberSvgUri;
+    }
+
+    function getFormerMemberSVGUri() external view returns(string memory){
+        return s_formerMemberSvgUri;
     }
 
 }

@@ -37,7 +37,7 @@ contract DAO {
    using PriceConverter for uint256;
 
    //State Variables
-   uint256 public constant MINIMUM_USD = 1000 ** 18;
+   uint256 public constant MINIMUM_USD = 1000e18;
    
    
    uint256 private i_membershipFeeInUSD;
@@ -56,11 +56,11 @@ contract DAO {
    event MemberJoined(address member, uint256 memberCount);
    event MemberLeft(address formerMember, uint256 memberCount);   
 
-   constructor(address _owner, address priceFeed) {
+   constructor(address _owner, address priceFeed, string memory activeMemberSvg, string memory formerMemberSvg) {
       if(_owner == address(0)) {revert();}  //busted!
       s_priceFeed = AggregatorV3Interface(priceFeed);
       i_owner = _owner;
-      membershipNFTContract = new MembershipNFT("", ""); //We will fill these in later
+      membershipNFTContract = new MembershipNFT(activeMemberSvg, formerMemberSvg); //We will fill these in later
    }
 
    function joinDAO() public payable{
@@ -69,7 +69,7 @@ contract DAO {
       //get price and check if it's enough
       require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
       //add them to the dao
-      membershipStatus[msg.sender] == true;
+      membershipStatus[msg.sender] = true;
       //update membership list
       membershipCount++;
       //mint them a new NFT
@@ -97,14 +97,14 @@ contract DAO {
       emit MemberLeft(msg.sender, membershipCount);
    }
 
-   function getMembershipPriceInETH() public view returns(uint256) {
+   function getPriceOfETHInUSDwithDecimals() public view returns(uint256) {
       (, int256 answer, , , ) = s_priceFeed.latestRoundData();
       // ETH/USD rate in 18 digit
       return uint256(answer * 10000000000);
    }
 
    function getMemebershipFeeUSD() public pure returns(uint256){
-      return MINIMUM_USD / 10**18;
+      return MINIMUM_USD / 1e18;
    }
 
    function getOwner() public view returns(address){
