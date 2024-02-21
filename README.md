@@ -30,3 +30,8 @@ This eventual goal is to build it into it's own standard contract that is an ext
 
 ## TODO:
 There's much to do with this project. Mainly most of the functionality needs to be moved to the NFTExtension Contract. With the goals and intentions in mind, it should be easy for a DAO to implent the NFTExention contract easily. Functions should be available to the DAO contract to allow it to change NFTs, mint NFTs...etc. Another conept that would be possible to implement is DAO member stats into the NFT. For example a DAO admin, or majority holder, or if have been a member for many years or voted on many successfuly projects. 
+
+
+
+## Extra Notes:
+This project uses a Chainlink AggregatorV3Interface to get the price on the Sepolia test network. This also has a mock V3 interace for deploying on a local network.
