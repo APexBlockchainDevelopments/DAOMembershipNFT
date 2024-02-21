@@ -105,7 +105,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
         uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals(); 
 
         for(uint160 i = 0; i < 50; i++){  //once it hits 90 memory limit?
-            address loopingUser = address((i+100));  //+100 so that we dont'use the 0x0 address
+            address loopingUser = address((i+100));  //+100 so that we dont use the 0x0 address
             vm.deal(loopingUser, STARTING_USER_BALANCE);
             vm.startPrank(loopingUser);
             newDao.joinDAO{value: entryFeeInWei}(); 
@@ -126,7 +126,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
         uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals(); 
 
         for(uint160 i = 0; i < 50; i++){  //once it hits 90 memory limit?
-            address loopingUser = address((i+100));  //+100 so that we dont'use the 0x0 address
+            address loopingUser = address((i+100));  //+100 so that we dontuse the 0x0 address
             vm.deal(loopingUser, STARTING_USER_BALANCE);
             vm.startPrank(loopingUser);
             newDao.joinDAO{value: entryFeeInWei}(); 
@@ -185,7 +185,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
     function test_cantBurnIfNotOwner() public singleUserJoinsDao{
         address randomUser = makeAddr("random");
         vm.prank(randomUser);
-        vm.expectRevert("You don't own this NFT");
+        vm.expectRevert("You dont own this NFT");
         nftManagerContract.burnNFT(0);
     }
 
@@ -258,7 +258,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
     }
 
 
-    //test can't transfer
+    //test cant transfer
     function test_nftCantTransfer() public singleUserJoinsDao {
         vm.startPrank(user);
         uint256 memberId = newDao.getMemberTokenId(user);
