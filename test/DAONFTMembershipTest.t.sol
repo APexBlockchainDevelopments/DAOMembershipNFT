@@ -16,6 +16,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
     HelperConfig public helperConfig;
 
     MembershipNFT public nftManagerContract;
+    DeployDAONFT public deployer;
 
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
     uint256 public constant GAS_PRICE = 1;
@@ -26,7 +27,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
     string formerSvg = vm.readFile("./images/former_member.svg");
 
     function setUp() public {
-        DeployDAONFT deployer = new DeployDAONFT();
+        deployer = new DeployDAONFT();
         (newDao, helperConfig) = deployer.run();
         nftManagerContract = MembershipNFT(newDao.getNFTContractAddress());
     }
@@ -55,9 +56,8 @@ contract DAONFTMembershipTest is StdCheats, Test{
         vm.stopPrank();
 
         // final check json URI of fresh member!
-        string memory jsonTokenURI = nftManagerContract.tokenURI(0);
-        string memory expectedJsonTokenURI = svgToImageURI(activeSvg);
-        assertEq(jsonTokenURI, expectedJsonTokenURI);
+        uint256 memberId = newDao.getMemberTokenId(user);
+        assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(true));
 
     }
 
@@ -71,7 +71,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
         _;
     }
 
-    function test_userCantJoinDAOTwice() public singleUserJoinsDao{
+    function test_userCantHoldTwoMemberships() public singleUserJoinsDao{
         vm.startPrank(user);
         uint256 daoEntryFee = newDao.getMemebershipFeeUSD();
         uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals();  //this math sucks, needs a fix
@@ -94,47 +94,190 @@ contract DAONFTMembershipTest is StdCheats, Test{
         assertEq(address(user).balance, currentuserBalance + expectedRefund);//user got the funds
         
         uint256 memberId = newDao.getMemberTokenId(user);
-
-        bool result= nftManagerContract.getMembershipStatusBasedOnTokenId(memberId);
         assertEq(nftManagerContract.getMembershipStatusBasedOnTokenId(memberId), false); //based on NFTmanagerContract
         assertEq(newDao.getMemberStatus(user), false); //based on Dao Contract
         assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(false));
     }
 
     //fuzz test users can join dao
-    //single user leaves after a bunch join
-    //user can rejoin
-    //users get NFTs
-    //uri
-    //users can leave dao
-    //users can leave dao
-    //user that left have nft flipped
-    //cant leaven without joining
+    function test_AmountOfUsersCanJoinDao() public {
+        uint256 daoEntryFee = newDao.getMemebershipFeeUSD();
+        uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals(); 
+
+        for(uint160 i = 0; i < 50; i++){  //once it hits 90 memory limit?
+            address loopingUser = address((i+100));  //+100 so that we dont'use the 0x0 address
+            vm.deal(loopingUser, STARTING_USER_BALANCE);
+            vm.startPrank(loopingUser);
+            newDao.joinDAO{value: entryFeeInWei}(); 
+            uint256 memberId = newDao.getMemberTokenId(loopingUser);
+            vm.stopPrank();
+
+            assertEq(newDao.getNumberOfActiveMembers(), i + 1); // users are one less
+            assertEq(address(newDao).balance, (newDao.getNumberOfActiveMembers() * entryFeeInWei));//contract has expected balance
+            assertEq(address(loopingUser).balance, STARTING_USER_BALANCE - entryFeeInWei);  //user sent the funds
+            assertEq(nftManagerContract.getMembershipStatusBasedOnTokenId(memberId), true); //based on NFTmanagerContract
+            assertEq(newDao.getMemberStatus(loopingUser), true); //based on Dao Contract
+            assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(true)); //Token URI
+        }
+    }
+
+    modifier multipleUsersJoin () {
+        uint256 daoEntryFee = newDao.getMemebershipFeeUSD();
+        uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals(); 
+
+        for(uint160 i = 0; i < 50; i++){  //once it hits 90 memory limit?
+            address loopingUser = address((i+100));  //+100 so that we dont'use the 0x0 address
+            vm.deal(loopingUser, STARTING_USER_BALANCE);
+            vm.startPrank(loopingUser);
+            newDao.joinDAO{value: entryFeeInWei}(); 
+            vm.stopPrank();
+        }
+        _;
+    }
+
+
+    function test_singleUserLeavesAfterMultipleJoin() public multipleUsersJoin {
+        address leavingUser = address(110);
+
+        uint256 membershipCountBeforeUserLeaves = newDao.getNumberOfActiveMembers();
+        uint256 daoContractBalance = address(newDao).balance;
+        uint256 expectedRefund = daoContractBalance / membershipCountBeforeUserLeaves;
+        uint256 currentuserBalance = address(leavingUser).balance;
+        vm.startPrank(leavingUser);
+        newDao.leaveDAO();
+        vm.stopPrank();
+
+        //user that left
+        assertEq(newDao.getNumberOfActiveMembers(), membershipCountBeforeUserLeaves - 1); // users are one less
+        assertEq(address(newDao).balance, daoContractBalance - expectedRefund);//contract has expected less balance
+        assertEq(address(leavingUser).balance, currentuserBalance + expectedRefund);//user got the funds
+        uint256 memberId = newDao.getMemberTokenId(leavingUser);
+        assertEq(nftManagerContract.getMembershipStatusBasedOnTokenId(memberId), false); //based on NFTmanagerContract
+        assertEq(newDao.getMemberStatus(leavingUser), false); //based on Dao Contract
+        assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(false));
+
+    }
+
+    function test_multipleUsersLeave() public multipleUsersJoin {
+        
+    }
+
+    function test_fuzzTestRandomTokens(uint256 _memberId) public multipleUsersJoin {
+        vm.assume(_memberId < 50);
+        bool memberStatus = nftManagerContract.getMembershipStatusBasedOnTokenId(_memberId); //based on NFT Contract
+        assertEq(nftManagerContract.tokenURI(_memberId), getCurrentMemberUri(memberStatus)); //Token URI
+    }
+
+
     //users rejoining
-    //users leave and get funds back
-    //memberlist updates
+    function test_userCanRejoin() public singleUserJoinsDao {
+        vm.startPrank(user);
+        newDao.leaveDAO();
+        newDao.joinDAO{value : 1e18}();
+        assertEq(newDao.getNumberOfActiveMembers(), 1);
+        assertEq(newDao.getMemberStatus(user), true);
+        vm.stopPrank();
+        uint256 memberId = newDao.getMemberTokenId(user);
+        assertEq(nftManagerContract.tokenURI(memberId), getCurrentMemberUri(true));
+    }
+
+    //cant burn
+    function test_cantBurnIfNotOwner() public singleUserJoinsDao{
+        address randomUser = makeAddr("random");
+        vm.prank(randomUser);
+        vm.expectRevert("You don't own this NFT");
+        nftManagerContract.burnNFT(0);
+    }
+
+    function test_cantBurnifStillMember() public singleUserJoinsDao{
+        vm.startPrank(user);
+        uint256 tokenId = newDao.getMemberTokenId(user);
+        vm.expectRevert("You are still and active member!");
+        nftManagerContract.burnNFT(tokenId);
+        vm.stopPrank();
+
+    }
+    //burn
+    function test_nftCanBurnAfterLeaving() public singleUserJoinsDao {
+        vm.startPrank(user);
+        newDao.leaveDAO();
+        uint256 tokenId = newDao.getMemberTokenId(user);
+        nftManagerContract.burnNFT(tokenId);
+        vm.stopPrank();
+        assertEq(nftManagerContract.balanceOf(user), 0);
+    }
+
+    function test_contractCantJoinTheDao() public {
+        SampleContract sampleContract = new SampleContract();
+        vm.deal(address(sampleContract), 10e18);
+        vm.prank(address(sampleContract));
+        vm.expectRevert("Contracts are not allowed to join the dao");
+        newDao.joinDAO{value: 1e18}();
+    }
+
+    function test_nonOwnerCantWithDrawFunds() public multipleUsersJoin {
+        address randomUser = makeAddr("random");
+        vm.prank(randomUser);
+        vm.expectRevert("You are not allowed to withdraw funds!");
+        newDao.ownerWithdrawFunds(1000000000000000000, "I want money");
+    }
 
 
-    //multipleuser testing
+    function test_ownerCanWithdrawFunds() public multipleUsersJoin {
+        uint256 withdrawAmount = 1e18;
+        address ownerOfDao = newDao.getOwner();
+
+        uint256 contractBalanceBeforeWithdraw = address(newDao).balance;
+        uint256 balanceOfOwnerBeforeWithdraw = ownerOfDao.balance;
+        vm.prank(ownerOfDao);
+        newDao.ownerWithdrawFunds(withdrawAmount, "Withdrawing to fund outsourced project");
+
+        assertEq(contractBalanceBeforeWithdraw - withdrawAmount, address(newDao).balance);
+        assertEq(ownerOfDao.balance , withdrawAmount + balanceOfOwnerBeforeWithdraw);
+    }
+
+    function test_userGetsLessAfterOwnerTakesSomeFundsOut() public multipleUsersJoin {
+        uint256 withdrawAmount = 1e18;
+        address ownerOfDao = newDao.getOwner();
+
+        uint256 contractBalanceBeforeWithdraw = address(newDao).balance;
+        uint256 balanceOfOwnerBeforeWithdraw = ownerOfDao.balance;
+        vm.prank(ownerOfDao);
+        newDao.ownerWithdrawFunds(withdrawAmount, "Withdrawing to fund outsourced project");
+
+        address leavingUser = address((110));
+        uint256 leavingUserBalanceBeforeLeavingDao = leavingUser.balance;
+        vm.prank(leavingUser);
+        newDao.leaveDAO();
+
+        uint256 daoEntryFee = newDao.getMemebershipFeeUSD();
+        uint256 entryFeeInWei = (daoEntryFee * 10**36) / newDao.getPriceOfETHInUSDwithDecimals(); 
+
+        assert(leavingUserBalanceBeforeLeavingDao != leavingUser.balance + entryFeeInWei);
+        assertEq(leavingUser.balance, leavingUserBalanceBeforeLeavingDao + (address(newDao).balance / newDao.getNumberOfActiveMembers() ));
+    }
+
+
+    //test can't transfer
+    function test_nftCantTransfer() public singleUserJoinsDao {
+        vm.startPrank(user);
+        uint256 memberId = newDao.getMemberTokenId(user);
+        address receiver = makeAddr("receiver");
+        vm.expectRevert();
+        nftManagerContract.safeTransferFrom(user, receiver, memberId);
+        vm.stopPrank();
+    }
 
 
     //basic generic testing
-
     function test_genericTesting() public {
         assertEq(newDao.getMemebershipFeeUSD(), 1000);
         assertEq(newDao.getOwner(), address(this));
         assertEq(newDao.getNFTContractAddress(), address(nftManagerContract));
+        if (block.chainid == 11155111) {
+            assertEq(newDao.getPriceFeedAddress(), 0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        } 
     }
-     
-  
-    //  function getNFTContractAddress() external view returns(address){
-    //     return address(membershipNFTContract);
-    //  }
-  
-    //  function getPriceFeedAddress() external view returns(address){
-    //     return address(s_priceFeed);
-    //  }
-
 
     //helper functions to compare resulting strings
     function svgToImageURI(string memory svg) public pure returns(string memory){
@@ -177,4 +320,8 @@ contract DAONFTMembershipTest is StdCheats, Test{
     }
 
 
+}
+
+contract SampleContract {
+    receive() external payable{}
 }

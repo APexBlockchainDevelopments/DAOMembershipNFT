@@ -16,7 +16,7 @@ contract DeployDAONFT is Script {
         string memory formerSvg = vm.readFile("./images/former_member.svg");
 
         vm.startBroadcast();
-        DAO newDAO = new DAO(msg.sender, priceFeed, svgToImageURI(activeSvg), svgToImageURI(formerSvg));
+        DAO newDAO = new DAO(address(this), priceFeed, svgToImageURI(activeSvg), svgToImageURI(formerSvg));
         vm.stopBroadcast();
         return (newDAO, helperConfig);
     }
@@ -27,5 +27,8 @@ contract DeployDAONFT is Script {
            bytes(string(abi.encodePacked(svg)))
        );
        return string(abi.encodePacked(baseURI, svgBase64Encoded));
-   } 
+   }
+
+    receive() external payable {}
+
 }

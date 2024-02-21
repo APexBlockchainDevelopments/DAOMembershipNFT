@@ -55,6 +55,7 @@ contract DAO {
    //events
    event MemberJoined(address member, uint256 memberCount);
    event MemberLeft(address formerMember, uint256 memberCount);   
+   event FundsWithdrew(uint256 amount, string reason);
 
    constructor(address _owner, address priceFeed, string memory activeMemberSvg, string memory formerMemberSvg) {
       if(_owner == address(0)) {revert();}  //busted!
@@ -68,6 +69,8 @@ contract DAO {
       require(getMemberStatus(msg.sender) == false, "You are already a member!");
       //get price and check if it's enough
       require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
+      //only contracts cannot join the dao as a member
+      require(!isContract(msg.sender), "Contracts are not allowed to join the dao");
       //add them to the dao
       membershipStatus[msg.sender] = true;
       //update membership list
@@ -95,6 +98,22 @@ contract DAO {
       require(success, "Error");
       //emit event
       emit MemberLeft(msg.sender, membershipCount);
+   }
+
+   function ownerWithdrawFunds(uint256 withdrawAmount, string memory reason) public {
+      require(msg.sender == i_owner, "You are not allowed to withdraw funds!");
+      require(withdrawAmount <= address(this).balance, "Exceeds contract balance");
+      (bool success,) = i_owner.call{value: withdrawAmount}("");
+      require(success, "Error");
+      emit FundsWithdrew(withdrawAmount, reason);
+   }
+
+   function isContract(address _address) public view returns (bool) {
+      uint32 size;
+      assembly {
+        size := extcodesize(_address)
+      }
+      return (size > 0);
    }
 
    function getPriceOfETHInUSDwithDecimals() public view returns(uint256) {

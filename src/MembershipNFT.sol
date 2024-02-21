@@ -72,8 +72,9 @@ contract MembershipNFT is ERC721, Ownable {
         tokenMembershipStatus[_tokenId] = false;
     }
 
-    function burnNFT(uint256 _tokenId) public onlyOwner {
-        require(getMembershipStatusBasedOnTokenId(_tokenId), "You are still and active member!");  //does this mess with the total supply?
+    function burnNFT(uint256 _tokenId) public {
+        require(ownerOf(_tokenId) == msg.sender, "You don't own this NFT");
+        require(!getMembershipStatusBasedOnTokenId(_tokenId), "You are still and active member!");
         _burn(_tokenId);
     }
 
