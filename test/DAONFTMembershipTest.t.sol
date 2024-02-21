@@ -159,11 +159,36 @@ contract DAONFTMembershipTest is StdCheats, Test{
     }
 
     function test_multipleUsersLeave() public multipleUsersJoin {
+        uint256 startingMembershipcount = newDao.getNumberOfActiveMembers();
+        uint256 startingContractBalance = address(newDao).balance;
+
+        for(uint160 i = 0; i < 10; i++){  
+            address loopingUser = address((i+100)); 
+            vm.deal(loopingUser, STARTING_USER_BALANCE);
+            vm.startPrank(loopingUser);
+            newDao.leaveDAO();
+            vm.stopPrank();
+        }
+
+        assertEq(startingMembershipcount - 10, newDao.getNumberOfActiveMembers());
+        assert(startingContractBalance > address(newDao).balance);
         
     }
 
     function test_fuzzTestRandomTokens(uint256 _memberId) public multipleUsersJoin {
         vm.assume(_memberId < 50);
+        
+        uint256 startingMembershipcount = newDao.getNumberOfActiveMembers();
+        uint256 startingContractBalance = address(newDao).balance;
+
+        for(uint160 i = 0; i < 10; i++){  
+            address loopingUser = address((i+100)); 
+            vm.deal(loopingUser, STARTING_USER_BALANCE);
+            vm.startPrank(loopingUser);
+            newDao.leaveDAO();
+            vm.stopPrank();
+        }
+
         bool memberStatus = nftManagerContract.getMembershipStatusBasedOnTokenId(_memberId); //based on NFT Contract
         assertEq(nftManagerContract.tokenURI(_memberId), getCurrentMemberUri(memberStatus)); //Token URI
     }
