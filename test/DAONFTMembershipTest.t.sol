@@ -177,9 +177,6 @@ contract DAONFTMembershipTest is StdCheats, Test{
 
     function test_fuzzTestRandomTokens(uint256 _memberId) public multipleUsersJoin {
         vm.assume(_memberId < 50);
-        
-        uint256 startingMembershipcount = newDao.getNumberOfActiveMembers();
-        uint256 startingContractBalance = address(newDao).balance;
 
         for(uint160 i = 0; i < 10; i++){  
             address loopingUser = address((i+100)); 
@@ -210,7 +207,7 @@ contract DAONFTMembershipTest is StdCheats, Test{
     function test_cantBurnIfNotOwner() public singleUserJoinsDao{
         address randomUser = makeAddr("random");
         vm.prank(randomUser);
-        vm.expectRevert("You dont own this NFT");
+        vm.expectRevert("You don't own this NFT");
         nftManagerContract.burnNFT(0);
     }
 
