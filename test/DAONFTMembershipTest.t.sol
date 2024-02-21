@@ -294,11 +294,12 @@ contract DAONFTMembershipTest is StdCheats, Test{
     //basic generic testing
     function test_genericTesting() public {
         assertEq(newDao.getMemebershipFeeUSD(), 1000);
-        assertEq(newDao.getOwner(), address(this));
+        assertEq(newDao.getOwner(), address(deployer));
         assertEq(newDao.getNFTContractAddress(), address(nftManagerContract));
         if (block.chainid == 11155111) {
             assertEq(newDao.getPriceFeedAddress(), 0x694AA1769357215DE4FAC081bf1f309aDC325306);
         } 
+        assertEq(nftManagerContract.getDAOAddress(), address(newDao));
     }
 
     //helper functions to compare resulting strings
