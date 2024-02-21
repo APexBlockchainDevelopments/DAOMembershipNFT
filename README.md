@@ -27,6 +27,6 @@ Example 4: A organziation is using NFTs with QR codes to attend a real world eve
 
 ## Goals:
 This eventual goal is to build it into it's own standard contract that is an extension of the ERC-721. From there it would be ideal to submit this standard to the community as an EIP and perhaps even become a new standard in the Ethereum ecosystem. It's not meant to replace the standard ERC or to be a replacement for the NFT standard, rather an extension that DAOs could easily implement to help manager their organziation and reward their users. 
-//Functions 
+
 ## TODO:
 There's much to do with this project. Mainly most of the functionality needs to be moved to the NFTExtension Contract. With the goals and intentions in mind, it should be easy for a DAO to implent the NFTExention contract easily. Functions should be available to the DAO contract to allow it to change NFTs, mint NFTs...etc. Another conept that would be possible to implement is DAO member stats into the NFT. For example a DAO admin, or majority holder, or if have been a member for many years or voted on many successfuly projects. 
