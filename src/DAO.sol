@@ -37,6 +37,14 @@ contract DAO {
    using PriceConverter for uint256;
 
    //State Variables
+
+   struct member {
+      address _wallet,
+      uint256 _joinDate,
+      uint256 _membershipId,
+   }
+
+   
    uint256 public constant MINIMUM_USD = 1000e18;
    
    
