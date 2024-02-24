@@ -39,12 +39,14 @@ contract DAO {
    //State Variables
 
    struct member {
-      address _wallet,
-      uint256 _joinDate,
-      uint256 _membershipId,
+      address _wallet;
+      uint256 _joinDate;
+      uint256 _membershipId;
+      bool membershipStatus;
+      uint256 memberTokenId;
    }
+   //should build a funciton in NFT contract to receive all info and params 
 
-   
    uint256 public constant MINIMUM_USD = 1000e18;
    
    
@@ -55,6 +57,7 @@ contract DAO {
 
    mapping (address => bool) private membershipStatus;
    mapping(address => uint256) private memberToTokenId;
+   member[] members;
    
    MembershipNFT private membershipNFTContract;
    AggregatorV3Interface private s_priceFeed;
