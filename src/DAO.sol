@@ -37,15 +37,13 @@ contract DAO {
    using PriceConverter for uint256;
 
    //State Variables
-
-   struct member {
-      address _wallet;
-      uint256 _joinDate;
-      uint256 _membershipId;
+   struct Member {   //should build a funciton in NFT contract to receive all info and params 
+      address wallet;
+      uint256 joinDate;
+      uint256 membershipId;
       bool membershipStatus;
-      uint256 memberTokenId;
    }
-   //should build a funciton in NFT contract to receive all info and params 
+
 
    uint256 public constant MINIMUM_USD = 1000e18;
    
@@ -55,9 +53,7 @@ contract DAO {
 
    uint256 private membershipCount;
 
-   mapping (address => bool) private membershipStatus;
-   mapping(address => uint256) private memberToTokenId;
-   member[] members;
+   mapping (address => Member) private membershipInfomation;  //this will contain all member info into a single mapping
    
    MembershipNFT private membershipNFTContract;
    AggregatorV3Interface private s_priceFeed;
@@ -82,14 +78,22 @@ contract DAO {
       require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
       //only contracts cannot join the dao as a member
       require(!isContract(msg.sender), "Contracts are not allowed to join the dao");
+      
       //add them to the dao
-      membershipStatus[msg.sender] = true;
+      Member memory newMember = Member({
+         wallet: msg.sender,
+         joinDate : block.timestamp,
+         membershipId : membershipCount,
+         membershipStatus : true
+      });
+
+      membershipInfomation[msg.sender] = newMember;
+
       //update membership list
       membershipCount++;
       //mint them a new NFT
       uint256 tokenId = membershipNFTContract.mintNFT(msg.sender);
-      //update the members to tokens mapping
-      memberToTokenId[msg.sender] = tokenId;
+
       //emit event
       emit MemberJoined(msg.sender, membershipCount);
    }
@@ -98,9 +102,12 @@ contract DAO {
       //check if they are a member
       require(getMemberStatus(msg.sender) == true, "You are not a member!");
       //change NFT
-      membershipNFTContract.flipNFT(memberToTokenId[msg.sender]);
+      
+      // membershipNFTContract.flipNFT(memberToTokenId[msg.sender]);  //need to update this line too
       //update membership list
-      membershipStatus[msg.sender] = false;
+      //membershipStatus[msg.sender] = false; // need to update this line
+
+
       //send funds back to them
       uint256 contractBalance = address(this).balance;
       uint256 shareAmount = contractBalance / membershipCount;
@@ -146,13 +153,15 @@ contract DAO {
    }
 
    function getMemberStatus(address _member) public view returns(bool){
-      return membershipStatus[_member];
-   }
-   
-   function getMemberTokenId(address _member) external view returns(uint256){
-      //what about zero?
-      return memberToTokenId[_member];
-   }
+         Member memory member = membershipInfomation[_member];
+         return member.membershipStatus;
+     }
+     
+     function getMemberTokenId(address _member) external view returns(uint256){//need to update this function
+         Member memory member = membershipInfomation[_member];
+         return member.membershipId;
+     }
+  
 
    function getNFTContractAddress() external view returns(address){
       return address(membershipNFTContract);
