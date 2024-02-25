@@ -105,8 +105,9 @@ contract DAO {
       
       // membershipNFTContract.flipNFT(memberToTokenId[msg.sender]);  //need to update this line too
       //update membership list
-      //membershipStatus[msg.sender] = false; // need to update this line
-
+      Member memory leavingMember = membershipInfomation[msg.sender];
+      leavingMember.membershipStatus = false;
+      membershipInfomation[msg.sender] = leavingMember;
 
       //send funds back to them
       uint256 contractBalance = address(this).balance;
