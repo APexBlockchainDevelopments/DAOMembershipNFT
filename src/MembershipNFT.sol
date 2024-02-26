@@ -59,7 +59,6 @@ contract MembershipNFT is ERC721, Ownable {
 
     function mintNFT(address _to) public returns(uint256) {
         require(msg.sender == daoContractAddress, "You are not allowed to mint new NFTS!");
-        //s_tokenIdToUri[s_tokenCounter] = getCurrentMemberUri(s_tokenCounter);  // dont need this line? it's all based on tokenMembershipStatus mapping
         _safeMint(_to, s_tokenCounter);
         tokenMembershipStatus[s_tokenCounter] = true;
         uint256 freshlyMintedTokenId = s_tokenCounter;
@@ -67,7 +66,7 @@ contract MembershipNFT is ERC721, Ownable {
         return freshlyMintedTokenId;
     }
 
-    function flipNFT(uint256 _tokenId) public {
+    function updateNFT(uint256 _tokenId) public {
         require(msg.sender == daoContractAddress, "You are not allowed to mint flip NFTS!");
         tokenMembershipStatus[_tokenId] = false;
     }

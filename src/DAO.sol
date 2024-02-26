@@ -102,8 +102,8 @@ contract DAO {
       //check if they are a member
       require(getMemberStatus(msg.sender) == true, "You are not a member!");
       //change NFT
-      
-      // membershipNFTContract.flipNFT(memberToTokenId[msg.sender]);  //need to update this line too
+      uint256 tokenId = getMemberTokenId(msg.sender);
+      membershipNFTContract.updateNFT(tokenId); //should also include member information
       //update membership list
       Member memory leavingMember = membershipInfomation[msg.sender];
       leavingMember.membershipStatus = false;
@@ -158,10 +158,10 @@ contract DAO {
          return member.membershipStatus;
      }
      
-     function getMemberTokenId(address _member) external view returns(uint256){//need to update this function
-         Member memory member = membershipInfomation[_member];
-         return member.membershipId;
-     }
+   function getMemberTokenId(address _member) public view returns(uint256){//need to update this function
+      Member memory member = membershipInfomation[_member];
+      return member.membershipId;
+   }
   
 
    function getNFTContractAddress() external view returns(address){
