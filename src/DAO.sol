@@ -44,7 +44,6 @@ contract DAO {
       bool membershipStatus;
    }
 
-
    uint256 public constant MINIMUM_USD = 1000e18;
    
    
@@ -170,5 +169,10 @@ contract DAO {
 
    function getPriceFeedAddress() external view returns(address){
       return address(s_priceFeed);
+   }
+
+   //testing function
+   function getMemberInfo(address addr) external view returns(Member memory) {
+      return membershipInfomation[addr];
    }
 }
