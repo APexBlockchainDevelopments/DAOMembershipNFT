@@ -85,7 +85,7 @@ contract MembershipNFT is ERC721, Ownable {
             revert BasicNFT__TokenUriNotFound();
         }
 
-        return getCurrentMemberUri(_tokenId);
+        return getUri(_tokenId);
     }
 
 
@@ -104,7 +104,7 @@ contract MembershipNFT is ERC721, Ownable {
     }
 
 
-    function getCurrentMemberUri(uint256 tokenId) public view returns(string memory){
+    function getUri(uint256 tokenId) public view returns(string memory){
         if (ownerOf(tokenId) == address(0)) {
             revert ERC721Metadata__URI_QueryFor_NonExistentToken();
         }
