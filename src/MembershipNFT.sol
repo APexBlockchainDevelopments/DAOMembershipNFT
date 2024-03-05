@@ -26,6 +26,7 @@ pragma solidity 0.8.20;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {Member} from "./MemberDeclaration.sol";
 
 contract MembershipNFT is ERC721, Ownable {
     // errors
@@ -117,6 +118,35 @@ contract MembershipNFT is ERC721, Ownable {
             image = s_currentMemberSvgUri;
             description = '", "description":"A current member of the DAO! This NFT Proves it! It will change if the member leaves the DAO.", ';
         }
+
+    
+        return string(
+            abi.encodePacked(
+                _baseURI(),
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"',
+                            name(),
+                            description,
+                            '"attributes": [{"trait_type": "Memberstatus", "active": ',
+                            activeStatus,
+                            '}], "image":"',
+                            image,
+                            '"}'
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function membershipStructUri() public view returns(string memory){  //used for testing and re-organizing json info
+        string memory description = '", "description":"A former member of the DAO! This NFT Proves it! This NFT changes when a member leaves the DAO.", ';
+        address wallet;
+        uint256 joinDate;
+        uint256 membershipId;
+        bool membershipStatus;
 
     
         return string(
