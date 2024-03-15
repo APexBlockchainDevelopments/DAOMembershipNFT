@@ -142,6 +142,7 @@ contract MembershipNFT is ERC721, Ownable {
     }
 
     function membershipStructUri() public view returns(string memory){  //used for testing and re-organizing json info, stll a work in progress. Need to figure out how to import a struct and given enough freedom to DAO
+        //perhaps sometype of abi call?
         string memory description = '", "description":"A former member of the DAO! This NFT Proves it! This NFT changes when a member leaves the DAO.", ';
         address wallet;
         uint256 joinDate;
