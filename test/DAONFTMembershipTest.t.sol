@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.20;
 
+import {Vm} from "forge-std/Vm.sol";
 import {DeployDAONFT} from "../script/DeployDAO.s.sol";
 import {MembershipNFT} from "../src/MembershipNFT.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {DAO} from "../src/DAO.sol";
 import {Test, console} from "forge-std/Test.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
